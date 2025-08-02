@@ -1,19 +1,19 @@
-from sqlalchemy import Integer, String, DateTime
+from sqlalchemy import String, DateTime
 from sqlalchemy.sql import func
-from app.db.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import List, Optional
-from app.db.models.profile import Profile
+
+from app.db.base import Base
+from app.db.models.profile import ProfileNationality
 
 
-class User(Base):
-    __tablename__ = "users"
+class Country(Base):
+    __tablename__ = "countries"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    username: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
-    is_active: Mapped[bool] = mapped_column(default=True)
+    id: Mapped[str] = mapped_column(String(3), primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    continent: Mapped[str] = mapped_column(String(50), nullable=True)
 
     # Timestamp columns
     created_at: Mapped[datetime] = mapped_column(
@@ -27,6 +27,6 @@ class User(Base):
     )
 
     # Relationships
-    profiles: Mapped[List["Profile"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan"
+    profile_nationalities: Mapped[List["ProfileNationality"]] = relationship(
+        back_populates="country", cascade="all, delete-orphan"
     )
