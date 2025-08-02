@@ -3,7 +3,7 @@ from sqlalchemy.sql import func
 from app.db.models.accessibility import Accessibility
 from app.db.models.country import Country
 from app.db.models.language import Language
-from db.base import Base
+from app.db.base import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import List, Optional
