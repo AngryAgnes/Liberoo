@@ -2,10 +2,12 @@ from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from app.db.base import Base
-from app.db.models.profile import ProfileAccessibility
+
+if TYPE_CHECKING:
+    from app.db.models.user import ProfileAccessibility
 
 
 class Accessibility(Base):
