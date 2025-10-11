@@ -2,6 +2,8 @@ from typing import List, Dict, Optional
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from langchain_openai import ChatOpenAI
+
+from app.core.config import settings
 from .vector_store import VectorStore
 
 class RAGModel:
@@ -11,7 +13,8 @@ class RAGModel:
         temperature: float = 0.7,
         embedding_model: str = "text-embedding-ada-002"
     ):
-        self.llm = ChatOpenAI(model_name=model_name, temperature=temperature)
+        print("OPENAI_API_KEY:", settings.OPENAI_API_KEY)
+        self.llm = ChatOpenAI(model_name=model_name, temperature=temperature, api_key=settings.OPENAI_API_KEY)
         self.vector_store = VectorStore(embedding_model=embedding_model)
         
         # Default prompt template

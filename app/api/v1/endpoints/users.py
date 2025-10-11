@@ -18,6 +18,29 @@ async def get_users(
         "authenticated_user": current_user.username
     }
 
+@router.get("/{user_id}")
+async def get_user(user_id: int):
+    """Retrieve a user by ID."""
+    return {"user_id": user_id, "username": f"user{user_id}"}
+
+
+@router.post("/")
+async def create_user():
+    """Create a new user."""
+    return {"message": "User created"}
+
+
+@router.patch("/{user_id}")
+async def update_user(user_id: int):
+    """Update user information."""
+    return {"message": f"User {user_id} updated"}
+
+
+@router.delete("/{user_id}")
+async def delete_user(user_id: int):
+    """Delete a user."""
+    return {"message": f"User {user_id} deleted"}
+
 
 @router.get("/me", response_model=User)
 async def read_users_me(
