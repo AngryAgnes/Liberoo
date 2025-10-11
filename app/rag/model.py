@@ -13,7 +13,6 @@ class RAGModel:
         temperature: float = 0.7,
         embedding_model: str = "text-embedding-ada-002"
     ):
-        print("OPENAI_API_KEY:", settings.OPENAI_API_KEY)
         self.llm = ChatOpenAI(model_name=model_name, temperature=temperature, api_key=settings.OPENAI_API_KEY)
         self.vector_store = VectorStore(embedding_model=embedding_model)
         

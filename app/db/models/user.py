@@ -1,21 +1,21 @@
-from sqlalchemy import ForeignKey, Integer, String, DateTime
+import uuid
+from sqlalchemy import Boolean, Enum, ForeignKey, Integer, String, DateTime, Uuid
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 
 from app.db.base import Base
+from app.db.models.enums import ChatSender
 
 if TYPE_CHECKING:
-    from app.db.models.accessibility import Accessibility
-    from app.db.models.country import Country
-    from app.db.models.language import Language
+    from app.db.models.geography import Country
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String(128), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True)
@@ -32,17 +32,17 @@ class User(Base):
     )
 
     # Relationships
-    profiles: Mapped[List["Profile"]] = relationship(
+    profiles: Mapped[List["UserProfile"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
 
 
-class Profile(Base):
+class UserProfile(Base):
     __tablename__ = "profiles"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=True
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True
     )
     nickname: Mapped[str] = mapped_column(String(50), nullable=True)
     profile_picture: Mapped[str] = mapped_column(String(1000), nullable=True)
@@ -82,12 +82,6 @@ class Profile(Base):
     profile_nationalities: Mapped[List["ProfileNationality"]] = relationship(
         back_populates="profile", cascade="all, delete-orphan"
     )
-    profile_languages: Mapped[List["ProfileLanguage"]] = relationship(
-        back_populates="profile", cascade="all, delete-orphan"
-    )
-    profile_accessibilities: Mapped[List["ProfileAccessibility"]] = relationship(
-        back_populates="profile", cascade="all, delete-orphan"
-    )
     travel_companions: Mapped[List["TravelCompanion"]] = relationship(
         foreign_keys="TravelCompanion.profile_id",
         back_populates="profile",
@@ -119,19 +113,19 @@ class TravelCompanion(Base):
 
     # Relationships
     # The main profile who added this companion
-    profile: Mapped["Profile"] = relationship(
+    profile: Mapped["UserProfile"] = relationship(
         foreign_keys=[profile_id], back_populates="travel_companions"
     )
     # The companion profile
-    companion_profile: Mapped["Profile"] = relationship(foreign_keys=[companion_id])
+    companion_profile: Mapped["UserProfile"] = relationship(foreign_keys=[companion_id])
 
 
 class ProfileNationality(Base):
     __tablename__ = "profile_nationalities"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    profile_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("profiles.id"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("profiles.id"), nullable=False
     )
     country_id: Mapped[str] = mapped_column(
         String(3), ForeignKey("countries.id"), nullable=False
@@ -149,61 +143,34 @@ class ProfileNationality(Base):
     )
 
     # Relationships
-    profile: Mapped["Profile"] = relationship(back_populates="profile_nationalities")
+    profile: Mapped["UserProfile"] = relationship(back_populates="profile_nationalities")
     country: Mapped["Country"] = relationship(back_populates="profile_nationalities")
 
 
-class ProfileLanguage(Base):
-    __tablename__ = "profile_languages"
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    profile_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("profiles.id"), nullable=False
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
-    language_id: Mapped[str] = mapped_column(
-        String(2), ForeignKey("languages.id"), nullable=False
-    )
+    currency: Mapped[Optional[str]] = mapped_column(String(10))
+    notifications_enabled: Mapped[Optional[bool]] = mapped_column(Boolean)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=func.now)
 
-    # Timestamp columns
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-
-    # Relationships
-    profile: Mapped["Profile"] = relationship(back_populates="profile_languages")
-    language: Mapped["Language"] = relationship(back_populates="profile_languages")
+    user: Mapped["User"] = relationship(back_populates="preferences")
 
 
-class ProfileAccessibility(Base):
-    __tablename__ = "profile_accessibilities"
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    profile_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("profiles.id"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE")
     )
-    accessibility_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("accessibilities.id"), nullable=False
+    text_query: Mapped[Optional[str]] = mapped_column(String(300))
+    sender: Mapped[Optional[ChatSender]] = mapped_column(
+        Enum(ChatSender, name="chat_sender")
     )
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), default=func.now)
 
-    # Timestamp columns
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
-
-    # Relationships
-    profile: Mapped["Profile"] = relationship(back_populates="profile_accessibilities")
-    accessibility: Mapped["Accessibility"] = relationship(
-        back_populates="profile_accessibilities"
-    )
+    user: Mapped[Optional["User"]] = relationship(back_populates="messages")
